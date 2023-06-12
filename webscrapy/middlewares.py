@@ -4,6 +4,8 @@
 # https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
 from scrapy import signals, Request
+import random
+from webscrapy.settings import USER_AGENT_LIST
 
 # useful for handling different item types with a single interface
 from itemadapter import is_item, ItemAdapter
@@ -100,8 +102,11 @@ class WebscrapyDownloaderMiddleware:
         # - or return a Request object
         # - or raise IgnoreRequest: process_exception() methods of
         #   installed downloader middleware will be called
-        request.cookies = COOKIES
+        # request.cookies = COOKIES
         # request.meta = {'proxy': 'socks5://127.0.0.1:10808'}
+        ua = random.choice(USER_AGENT_LIST)
+        request.headers['User-Agent'] = ua
+
         return None
 
     def process_response(self, request, response, spider):
