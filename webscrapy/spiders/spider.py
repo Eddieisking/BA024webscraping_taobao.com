@@ -12,11 +12,13 @@ class SpiderSpider(scrapy.Spider):
         for page in range(1):
             yield Request(
                 url=f'https://movie.douban.com/top250?start={page * 25}&filter=',
-                meta={'proxy':'socks5://127.0.0.1:10808'},
+                # meta={'proxy':'socks5://127.0.0.1:10808'},
                 # headers=self.headers
             )
 
     def parse(self, response, **kwargs):
+        print(f"请求头信息为: {response.request.headers.get('User-Agent')}")
+
         li_list = response.xpath(r'//*[@id="content"]/div/div[@class="article"]/ol/li')
 
         for li in li_list:
@@ -42,6 +44,3 @@ class SpiderSpider(scrapy.Spider):
 
         yield item
 
-from fake_useragent import UserAgent
-ua = UserAgent()
-print(ua)
