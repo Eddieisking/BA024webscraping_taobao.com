@@ -11,11 +11,10 @@ from webscrapy.settings import USER_AGENT_LIST
 from itemadapter import is_item, ItemAdapter
 
 def get_cookies_dict():
-    cookies_str = 'session-id=262-5810110-4651945; ubid-acbuk=257-6978771-9482927; ' \
-                  'x-acbuk="DhqB6Vxx@39xZAJgVE5hSsCCo@JcvyppwGxScJ2l?DHQGOY49AyksPPeXJbmJD4E"; ' \
-                  'at-acbuk=Atza|IwEBIOiD2MyRQKSQeQgC9K-JIb9jjkwAUoChhdemoZ_xO1bg2W6fNGIF2cStoo0Z1O8T8IWm_erF3b4O' \
-                  '-RclBW3_La55ALvWrPkxB8I7TtVw6HisoWCsFuUIJQNUvrx-ZXN197' \
-                  '-5D5xy_yr9YMdyfBz_3WbM3yrpaLNjFYUYT4abn5H7CGOwos8egkv6h0zuSQwsJoqjlEf7n7TNYEEyTOyXvHkgl7y9r9ZLso21ajoYl2V_oA; sess-at-acbuk="avDIOAaEqIjYrKVnrekdr+sRMFSMiI3rW+8smTK58Wo="; sst-acbuk=Sst1|PQH2YDOsC7kmM3W17Uer2vA_CVZC-cctL420ehA28GXNTEQEzDY16LSTGuOhpg7FadGPKp4_-mh5iyJbgfZgdTqPTqGWc6orB1ANKW8MILxooyvrVSwqBU7gkCqaZc1VptkInAe2OCEq6Ktj0JlF19ZOAkSASGsNJTwDy1nQBXSaCWX93PIC_Ry_olQ1NLdYhhmZDi5m2ejQMoV2CkN5KJ0LOPtA_f5Unri1efL3PF-EivPbYV01PLDjHKwnk_FrVQK_M7ghkcMS5QDvb9lYK0-OFLV2uCAGqPuG6zIhnX33D50; lc-acbuk=en_GB; i18n-prefs=GBP; av-timezone=Europe/London; session-id-time=2082787201l; session-token=7AagOEW7Y5mhq2oaAFh96nJBHJGMukAV2OYd3wDC37mPb6N9IiHZOcu61yGE4PTifGy8R1Ii/pM6bXZstJYrizgDNRNffzvknuphsEbuns880C4yPaRCNReQZTxY4gwGu9WSIAAIDW9s9hv/rY1c2GH6qDHoNMc60t8+emmcDU/iljeN07ITgtCm5Io+FsWIk5fVIfMjLYufbD86rmAEz1SvHavEs/Ja8M6V4cBOaoAzsu+X3aI3gq2kQqEIN6QPxGzXPjdui4E=; csm-hit=tb:s-G0HC2MA54TBQNTQTDW50|1686648223378&t:1686648225738&adb:adblk_no '
+    cookies_str = 'session-id=262-5810110-4651945; ubid-acbuk=257-6978771-9482927; lc-acbuk=en_GB; ' \
+                  'av-timezone=Europe/London; ' \
+                  'session-token=DOVZpTftMkUoO5VyBKks7lmDekubDW0tOJ/Y8RFlRCDcQNMY9anb57YIE61uvnNfAPAU66EyGAc8DqO' \
+                  '/ZMK3goltzXQk74bkMIZ3blfypkZD9i4g5AO2dfs6WUwoHB4od8kwqIOj6ES9kJW0weMmjYApvtAIk6gWp5CjVLJ47uP0nRCUiTs8G5JIMsqjwxfHtGnWSqgR2I+lwltG3l0/liTbKeUAkXFyLxSQr9zz0ZafpcrzIKJceuTtwMyRk8sD; x-acbuk="shubALQENXQDItWhyI3ywt5EDiCNBbXUzZxfVHH9lWROOPcIA1q?BbuwaQt63DTE"; at-acbuk=Atza|IwEBIFEhoQBEgsl13zRH7tbqZZsLkFdSErJL6Jpi6Ifp9c_RyZ1tOhe7IfKF6nnJIh4hUThrCCZEVx6oYY0G15ffaTbjgdGYLF135v9-KfnBvEYFIpug_gBh3M1fdnB6lZZD8XTNQz-jsWttVgTtHuEzksP1pNtNsThE4BRKD4DtFSgu34T2Q5eImhkKWwlSTfSYcE1XeAhMnuxcQBcuS-TRVIc5NXki7U0ydlVIKkGvCyZKRg; sess-at-acbuk="+dmR+g8Ip+sCWW69DkUyjUV8hffpBaRX/184ZeqVZPk="; sst-acbuk=Sst1|PQH59LJBGdPDpiPYay9TQjKgCTur4B_PjtkbLg3tmdmH6cMrIfsn-19grn3avly8z5lHqWBXUDrgslHmXWeLxndLGO-_TnF9FBKniR-hLl-W7O7kH0vpUajOjSAEJZUvTND9zvrxQP375bqjQyzEiGM-nVmoeQ4l9pv2EelRBehMRHyMjebmhyz5kVmW5-wZo3ui_7ZIoOIGw_nUBzx-s64hnjZ_Lpl9lN1fSst5eCzgt3nK74MqKlowJkghFOAoHFjU5nsP2vmzyq6GEgxUVOG9MIABXnggOQRzXyw9wJwNWtc; session-id-time=2082787201l; i18n-prefs=GBP; csm-hit=tb:XWX730Q202Q0YG44CV43+s-XWX730Q202Q0YG44CV43|1686670523540&t:1686670523540&adb:adblk_no '
     cookies_dict = {}
     for item in cookies_str.split('; '):
         key, value = item.split('=', maxsplit=1)
@@ -93,7 +92,7 @@ class WebscrapyDownloaderMiddleware:
         # - or return a Request object
         # - or raise IgnoreRequest: process_exception() methods of
         #   installed downloader middleware will be called
-        # request.cookies = COOKIES
+        request.cookies = COOKIES
         # request.meta = {'proxy': 'socks5://127.0.0.1:10808'}
         ua = random.choice(USER_AGENT_LIST)
         request.headers['User-Agent'] = ua

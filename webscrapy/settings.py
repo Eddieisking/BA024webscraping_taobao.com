@@ -109,7 +109,7 @@ DOWNLOAD_TIMEOUT = 300
 #CONCURRENT_REQUESTS_PER_IP = 16
 
 # Disable cookies (enabled by default)
-COOKIES_ENABLED = False
+# COOKIES_ENABLED = False
 
 # Disable Telnet Console (enabled by default)
 #TELNETCONSOLE_ENABLED = False
@@ -140,10 +140,10 @@ DOWNLOADER_MIDDLEWARES = {
 
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
-# ITEM_PIPELINES = {
-#    # "webscrapy.pipelines.ExcelPipeline": 300,
-#     "webscrapy.pipelines.DatabasePipeline": 500,
-# }
+ITEM_PIPELINES = {
+   # "webscrapy.pipelines.ExcelPipeline": 300,
+    "webscrapy.pipelines.DatabasePipeline": 500,
+}
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html
