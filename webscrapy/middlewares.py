@@ -11,20 +11,11 @@ from webscrapy.settings import USER_AGENT_LIST
 from itemadapter import is_item, ItemAdapter
 
 def get_cookies_dict():
-    cookies_str = 'bid=5vHRxwzPfWk; ll="108288"; _ga=GA1.2.1031765219.1683755657; __utmc=30149280; __utmc=223695111; ' \
-                  'trc_cookie_storage=taboola%2520global%253Auser-id%3D90dfdc74-9d30-4e84-a5ee-b5949643953d' \
-                  '-tucta519b5c; _vwo_uuid_v2=DAEBF6C9130EC4B28E5ADAACD2E7C7E62|1f373ceedf3cc407298c22c17f2bc93a; ' \
-                  '__utmz=30149280.1686496566.9.5.utmcsr=google|utmccn=(organic)|utmcmd=organic|utmctr=(' \
-                  'not%20provided); __utmz=223695111.1686496566.9.5.utmcsr=google|utmccn=(' \
-                  'organic)|utmcmd=organic|utmctr=(not%20provided); dbcl2="213834581:qp0rJ+lnfTY"; ck=Lzeh; ' \
-                  'push_noty_num=0; push_doumail_num=0; ' \
-                  '__gads=ID=db4190d656932049-22e5a623cedc008d:T=1683755673:RT=1686497872:S=ALNI_MYJ0HKX3BeEcQ6f4et' \
-                  '-WhVbc8bTlQ; __gpi=UID=00000bec5b2ec400:T=1683755673:RT=1686497872:S' \
-                  '=ALNI_MYN8LVQeMJGyPFxSRbMHeuSn739Vw; ' \
-                  '_pk_ref.100001.4cf6=%5B%22%22%2C%22%22%2C1686500728%2C%22https%3A%2F%2Faccounts.douban.com%2F%22' \
-                  '%5D; ap_v=0,6.0; __utma=30149280.1031765219.1683755657.1686496566.1686500745.10; ' \
-                  '__utma=223695111.1031765219.1683755657.1686496566.1686500745.10; ' \
-                  '_pk_id.100001.4cf6=cf10b52e64bbc0d1.1683755671..1686500853.undefined. '
+    cookies_str = 'session-id=262-5810110-4651945; ubid-acbuk=257-6978771-9482927; ' \
+                  'x-acbuk="DhqB6Vxx@39xZAJgVE5hSsCCo@JcvyppwGxScJ2l?DHQGOY49AyksPPeXJbmJD4E"; ' \
+                  'at-acbuk=Atza|IwEBIOiD2MyRQKSQeQgC9K-JIb9jjkwAUoChhdemoZ_xO1bg2W6fNGIF2cStoo0Z1O8T8IWm_erF3b4O' \
+                  '-RclBW3_La55ALvWrPkxB8I7TtVw6HisoWCsFuUIJQNUvrx-ZXN197' \
+                  '-5D5xy_yr9YMdyfBz_3WbM3yrpaLNjFYUYT4abn5H7CGOwos8egkv6h0zuSQwsJoqjlEf7n7TNYEEyTOyXvHkgl7y9r9ZLso21ajoYl2V_oA; sess-at-acbuk="avDIOAaEqIjYrKVnrekdr+sRMFSMiI3rW+8smTK58Wo="; sst-acbuk=Sst1|PQH2YDOsC7kmM3W17Uer2vA_CVZC-cctL420ehA28GXNTEQEzDY16LSTGuOhpg7FadGPKp4_-mh5iyJbgfZgdTqPTqGWc6orB1ANKW8MILxooyvrVSwqBU7gkCqaZc1VptkInAe2OCEq6Ktj0JlF19ZOAkSASGsNJTwDy1nQBXSaCWX93PIC_Ry_olQ1NLdYhhmZDi5m2ejQMoV2CkN5KJ0LOPtA_f5Unri1efL3PF-EivPbYV01PLDjHKwnk_FrVQK_M7ghkcMS5QDvb9lYK0-OFLV2uCAGqPuG6zIhnX33D50; lc-acbuk=en_GB; i18n-prefs=GBP; av-timezone=Europe/London; session-id-time=2082787201l; session-token=7AagOEW7Y5mhq2oaAFh96nJBHJGMukAV2OYd3wDC37mPb6N9IiHZOcu61yGE4PTifGy8R1Ii/pM6bXZstJYrizgDNRNffzvknuphsEbuns880C4yPaRCNReQZTxY4gwGu9WSIAAIDW9s9hv/rY1c2GH6qDHoNMc60t8+emmcDU/iljeN07ITgtCm5Io+FsWIk5fVIfMjLYufbD86rmAEz1SvHavEs/Ja8M6V4cBOaoAzsu+X3aI3gq2kQqEIN6QPxGzXPjdui4E=; csm-hit=tb:s-G0HC2MA54TBQNTQTDW50|1686648223378&t:1686648225738&adb:adblk_no '
     cookies_dict = {}
     for item in cookies_str.split('; '):
         key, value = item.split('=', maxsplit=1)

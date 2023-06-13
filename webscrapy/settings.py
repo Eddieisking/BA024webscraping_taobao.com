@@ -7,6 +7,65 @@
 #     https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 #     https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
+"""
+Target websites list
+•             Castorama.fr
+
+•             LeroyMerlin.fr
+
+•             Castorma.pl
+
+•             Mitre10.co.nz
+
+•             Bunnings.com.au
+
+•             Diy.com
+
+•             leroeymerlin.it
+
+•             manomano.it
+
+•             ebay.it
+
+•             Bauhaus.se
+
+•             Bauhaus.dk.
+
+•             Bauhaus.no
+
+•             gotools.de
+
+•             svh24.de
+
+•             bol.com
+
+•             toolstation.nl
+
+•             www. taobao.com
+
+•             jd.com
+
+•             pinduoduo.com
+
+•             manomano.fr
+
+•             TODOTALADROS (JG): https://todotaladros.com/es/
+
+•             BRIKUM (Materials Gisbert) : https://www.brikum.com/
+
+•             FERRAMENTASPT : https://ferramentas.pt/
+
+•             FERRAMENTAS PRO :https://www.ferramentaspro.pt/pt/
+
+•             https://allegro.pl/
+
+•             Amazon
+
+•             Lowes
+
+•             The Home Depot
+"""
+
 BOT_NAME = "webscrapy"
 
 SPIDER_MODULES = ["webscrapy.spiders"]
@@ -35,7 +94,7 @@ USER_AGENT_LIST = [
 ]
 
 # Obey robots.txt rules
-ROBOTSTXT_OBEY = False
+ROBOTSTXT_OBEY = True
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
 # CONCURRENT_REQUESTS = 32

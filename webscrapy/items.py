@@ -7,11 +7,12 @@ import scrapy
 
 
 class WebscrapyItem(scrapy.Item):
-    name = scrapy.Field()
-    rating = scrapy.Field()
-    info = scrapy.Field()
-    length = scrapy.Field()
-    abstract = scrapy.Field()
     # define the fields for your item here like:
     # name = scrapy.Field()
+    product_name = scrapy.Field()
+    customer_name = scrapy.Field()
+    customer_rating = scrapy.Field()
+    customer_date = scrapy.Field()
+    customer_review = scrapy.Field()
+    customer_support = scrapy.Field()
     pass
