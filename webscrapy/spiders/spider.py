@@ -1,6 +1,6 @@
 """
 Project: Web scraping for customer reviews
-Author: Hao Cui
+Author: Hào Cui
 Date: 06/12/2023
 """
 import scrapy
@@ -24,7 +24,7 @@ class SpiderSpider(scrapy.Spider):
         search_urls = []
         for keyword in keywords:
             search_urls = [f'https://www.amazon.co.uk/s?k={keyword}+{company.replace(" ", "+")}r&page={page}&qid=1686602870&ref=sr_pg_{page}' for page
-                       in range(1,2)]
+                       in range(1,8)]
 
         # yield request of each product_url to scrapy
         for search in search_urls:
@@ -37,13 +37,9 @@ class SpiderSpider(scrapy.Spider):
     def parse(self, response, **kwargs):
         product_urls = response.xpath('//*[@id="search"]//a[@class="a-link-normal s-underline-text s-underline-link-text s-link-style a-text-normal"]/@href').extract()
 
-        #test
-        product_url_detailed = f'https://www.amazon.co.uk/{product_urls[4]}'
-        yield Request(url=product_url_detailed, callback=self.product_parse)
-
-        # for product_url in product_urls:
-        #     product_url_detailed = f'https://www.amazon.co.uk/{product_url}'
-        #     yield Request(url=product_url_detailed, callback=self.product_parse)
+        for product_url in product_urls:
+            product_url_detailed = f'https://www.amazon.co.uk/{product_url}'
+            yield Request(url=product_url_detailed, callback=self.product_parse)
 
 
     def product_parse(self, response: Request, **kwargs):

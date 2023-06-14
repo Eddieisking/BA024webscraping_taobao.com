@@ -61,6 +61,7 @@ class DatabasePipeline:
     def close_spider(self, spider):
         if len(self.data) > 0:
             self.sql_write()
+        # self.cursor.close()
         self.conn.close()
 
     def process_item(self, item, spider):
@@ -72,7 +73,7 @@ class DatabasePipeline:
         customer_date = remove_unappealing_characters(customer_date_original)
         # Remove unloaded chars and cut
         customer_review_original = item.get('customer_review', '')
-        customer_review = remove_unappealing_characters(' '.join(customer_review_original)[:1000])
+        customer_review = remove_unappealing_characters(' '.join(customer_review_original))
         customer_support = item.get('customer_support', '')
         self.data.append((product_name, customer_name, customer_rating, customer_date, customer_review, customer_support))
 
