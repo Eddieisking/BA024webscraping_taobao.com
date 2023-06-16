@@ -9,6 +9,7 @@ import scrapy
 class WebscrapyItem(scrapy.Item):
     # define the fields for your item here like:
     # name = scrapy.Field()
+    review_id = scrapy.Field()
     product_name = scrapy.Field()
     customer_name = scrapy.Field()
     customer_rating = scrapy.Field()

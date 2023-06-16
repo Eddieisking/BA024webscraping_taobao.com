@@ -1,8 +1,10 @@
 """
 Project: Web scraping for customer reviews
 Author: Hào Cui
-Date: 06/12/2023
+Date: 06/15/2023
 """
+import json
+import re
 import scrapy
 from scrapy import Request
 
@@ -11,68 +13,102 @@ from webscrapy.items import WebscrapyItem
 
 class SpiderSpider(scrapy.Spider):
     name = "spider"
-    allowed_domains = ["www.amazon.co.uk"]
-    headers = {} #
+    allowed_domains = ["www.castorama.fr", "api.bazaarvoice.com"]
+    headers = {}  #
 
     def start_requests(self):
         # keywords = ['DeWalt', 'Black+and+Decker', 'Stanley', 'Craftsman', 'Porter-Cable', 'Bostitch', 'Irwin+Tools',
         #             'Lenox']
-        keywords = ['DeWalt']
-        company = 'Stanley Black and Decker'
+        keywords = ['Stanley']
+        # company = 'Stanley Black and Decker'
 
         # from search words to generate product_urls
-        search_urls = []
         for keyword in keywords:
-            search_urls = [f'https://www.amazon.co.uk/s?k={keyword}+{company.replace(" ", "+")}r&page={page}&qid=1686602870&ref=sr_pg_{page}' for page
-                       in range(1,8)]
+            push_key = {'keyword': keyword}
+            search_url = f'https://www.castorama.fr/search?term={keyword}'
 
-        # yield request of each product_url to scrapy
-        for search in search_urls:
             yield Request(
-                url=search,
+                url=search_url,
+                callback=self.parse,
+                cb_kwargs=push_key,
                 # meta={'proxy':'socks5://127.0.0.1:10110'},
                 # headers=self.headers
             )
 
     def parse(self, response, **kwargs):
-        product_urls = response.xpath('//*[@id="search"]//a[@class="a-link-normal s-underline-text s-underline-link-text s-link-style a-text-normal"]/@href').extract()
+
+        # Extract the pages of product_urls
+        page = response.xpath('//p[@data-test-id="search-options-total-results"]/text()')[0].extract()
+        page_number = int(''.join(filter(str.isdigit, page)))
+        pages = (page_number // 24) + 1
+
+        # Based on pages to build product_urls
+        keyword = kwargs['keyword']
+        product_urls = [f'https://www.castorama.fr/search?page={page}&term={keyword}' for page
+                        in range(1, pages+1)]
 
         for product_url in product_urls:
-            product_url_detailed = f'https://www.amazon.co.uk/{product_url}'
-            yield Request(url=product_url_detailed, callback=self.product_parse)
-
+            yield Request(url=product_url, callback=self.product_parse)
 
     def product_parse(self, response: Request, **kwargs):
-        href = response.xpath('//a[@class="a-link-emphasis a-text-bold"]/@href').extract()
-        if href:
-            for each_href in href:
-                product_reviews = f'https://www.amazon.co.uk/{each_href}'
-                yield scrapy.Request(url=product_reviews, callback=self.review_parse)
-        else:
-            product = response.xpath('//*[@id="productTitle"]/text()').get()
-            print(f'{product} has none of customer reviews')
+
+        product_list = response.xpath('//*[@id="content"]//main//ul/li')
+
+        for product in product_list:
+            product_href = product.xpath('.//div[@data-test-id="product-panel"]/a/@href')[0].extract()
+            product_detailed_url = f'https://www.castorama.fr{product_href}'
+            yield Request(url=product_detailed_url, callback=self.product_detailed_parse)
+
+    def product_detailed_parse(self, response, **kwargs):
+
+        product_id = response.xpath('.//*[@id="product-details"]//td[@data-test-id="product-ean-spec"]/text()')[
+            0].extract()
+
+        # Product reviews url
+        product_detailed_href = f'https://api.bazaarvoice.com/data/reviews.json?resource=reviews&action' \
+                                f'=REVIEWS_N_STATS&filter' \
+                                f'=productid%3Aeq%3A{product_id}&filter=contentlocale%3Aeq%3Ade*%2Cen*%2Ces*%2Cit' \
+                                f'*%2Cpt*%2Cro*%2Cfr_FR' \
+                                f'%2Cfr_FR&filter=isratingsonly%3Aeq%3Afalse&filter_reviews=contentlocale%3Aeq%3Ade' \
+                                f'*%2Cen*%2Ces*%2Cit' \
+                                f'*%2Cpt*%2Cro*%2Cfr_FR%2Cfr_FR&include=authors%2Cproducts&filteredstats=reviews' \
+                                f'&Stats=Reviews&limit=8' \
+                                f'&offset=0&sort=submissiontime%3Adesc&passkey' \
+                                f'=cad9K7m2kxo5wBH0ObPjr6uk0EFHk2o06sOp4UMIhBNBM&apiversion' \
+                                f'=5.5&displaycode=5678-fr_fr '
+
+        if product_detailed_href:
+            yield Request(url=product_detailed_href, callback=self.review_parse)
 
     def review_parse(self, response: Request, **kwargs):
-        review_list = response.xpath('//div[@id="cm_cr-review_list"]/div[@data-hook="review"]')
-        for review in review_list:
-            item = WebscrapyItem()
-            item['product_name'] = response.xpath('//*[@id="cm_cr-product_info"]//a[@class="a-link-normal"]/text()')[-1].extract()
-            item['customer_name'] = review.xpath('.//div[@class="a-profile-content"]/span/text()')[0].extract() or 'N/A'
-            item['customer_rating'] = review.xpath('.//i/span[@class="a-icon-alt"]/text()')[0].extract() or 'N/A'
-            item['customer_date'] = review.xpath('.//span[@data-hook="review-date"]/text()')[0].extract() or 'N/A'
-            item['customer_review'] = review.xpath('.//span[@data-hook="review-body"]/span/text()').extract() or ['N/A']
-            item['customer_support'] = review.xpath('.//span[@data-hook="helpful-vote-statement"]/text()').extract() or 'N/A'
 
-            yield item
+        datas = json.loads(response.body)
 
-        # Generate the next page of customer reviews
-        next_page_url = response.xpath('//li[@class="a-last"]/a/@href').get() or None
-        if next_page_url:
-            # print('success')
-            next_page_url_full = f'https://www.amazon.co.uk/{next_page_url}'
-            yield Request(url=next_page_url_full, callback=self.review_parse)
+        if datas:
+            limit_number = datas.get('Limit')
+            offset_number = datas.get('Offset') + limit_number
+            total_number = datas.get('TotalResults')
+
+            for i in range(0, limit_number):
+                try:
+                    item = WebscrapyItem()
+                    item['review_id'] = datas.get('Results')[i].get('Id')
+                    item['product_name'] = datas.get('Results')[i].get('ProductId')
+                    item['customer_name'] = datas.get('Results')[i].get('UserNickname')
+                    item['customer_rating'] = datas.get('Results')[i].get('Rating')
+                    item['customer_date'] = datas.get('Results')[i].get('SubmissionTime')
+                    item['customer_review'] = datas.get('Results')[i].get('ReviewText')
+                    item['customer_support'] = datas.get('Results')[i].get('TotalPositiveFeedbackCount')
+
+                    yield item
+                except Exception as e:
+                    break
+
+            if offset_number < total_number:
+                next_page = re.sub(r'offset=\d+', f'offset={offset_number}', response.url)
+                yield Request(url=next_page, callback=self.review_parse)
+            else:
+                pass
+
         else:
-            # print('failure')
             pass
-
-

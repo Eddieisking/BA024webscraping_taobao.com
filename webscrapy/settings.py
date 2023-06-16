@@ -94,7 +94,7 @@ USER_AGENT_LIST = [
 ]
 
 # Obey robots.txt rules
-ROBOTSTXT_OBEY = True
+# ROBOTSTXT_OBEY = True
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
 # CONCURRENT_REQUESTS = 32
@@ -129,7 +129,8 @@ DOWNLOAD_TIMEOUT = 300
 # Enable or disable downloader middlewares
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 DOWNLOADER_MIDDLEWARES = {
-   "webscrapy.middlewares.WebscrapyDownloaderMiddleware": 100,
+    # "webscrapy.middlewares.SeleniumMiddleware": 90,
+    "webscrapy.middlewares.WebscrapyDownloaderMiddleware": 100,
 }
 
 # Enable or disable extensions
@@ -142,7 +143,7 @@ DOWNLOADER_MIDDLEWARES = {
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
    # "webscrapy.pipelines.ExcelPipeline": 300,
-    "webscrapy.pipelines.DatabasePipeline": 500,
+   #  "webscrapy.pipelines.DatabasePipeline": 500,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
