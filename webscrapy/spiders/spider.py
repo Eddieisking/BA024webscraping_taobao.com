@@ -1,10 +1,11 @@
 """
 Project: Web scraping for customer reviews
 Author: Hào Cui
-Date: 06/15/2023
+Date: 06/16/2023
 """
 import json
 import re
+
 import scrapy
 from scrapy import Request
 
@@ -17,9 +18,8 @@ class SpiderSpider(scrapy.Spider):
     headers = {}  #
 
     def start_requests(self):
-        # keywords = ['DeWalt', 'Black+and+Decker', 'Stanley', 'Craftsman', 'Porter-Cable', 'Bostitch', 'Irwin+Tools',
-        #             'Lenox']
-        keywords = ['Stanley']
+        keywords = ['DeWalt', 'Black+and+Decker', 'Stanley', 'Craftsman', 'Porter-Cable', 'Bostitch', 'Irwin+Tools',
+                    'Lenox']
         # company = 'Stanley Black and Decker'
 
         # from search words to generate product_urls

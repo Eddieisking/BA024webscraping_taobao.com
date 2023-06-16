@@ -7,9 +7,9 @@ from scrapy import signals, Request
 import random
 from webscrapy.settings import USER_AGENT_LIST
 
-
 # useful for handling different item types with a single interface
 from itemadapter import is_item, ItemAdapter
+
 
 def get_cookies_dict():
     cookies_str = 'session-id=262-5810110-4651945; ubid-acbuk=257-6978771-9482927; lc-acbuk=en_GB; ' \
@@ -22,7 +22,9 @@ def get_cookies_dict():
         cookies_dict[key] = value
     return cookies_dict
 
+
 COOKIES = get_cookies_dict()
+
 
 class WebscrapySpiderMiddleware:
     # Not all methods need to be defined. If a method is not defined,
@@ -69,28 +71,6 @@ class WebscrapySpiderMiddleware:
 
     def spider_opened(self, spider):
         spider.logger.info("Spider opened: %s" % spider.name)
-
-# Selenium middleware
-class SeleniumMiddleware:
-
-    def __init__(self):
-        chrome_options = Options()
-        chrome_options.add_argument("--headless")  # Run Chrome in headless mode
-        self.driver = webdriver.Chrome(options=chrome_options)
-
-    def process_request(self, request, spider):
-        self.driver.get(request.url)
-        self.driver.implicitly_wait(5)
-        body = self.driver.page_source.encode('utf-8')
-        return HtmlResponse(
-            self.driver.current_url,
-            body=body,
-            encoding='utf-8',
-            request=request
-        )
-
-    def __del__(self):
-        self.driver.quit()
 
 class WebscrapyDownloaderMiddleware:
     # Not all methods need to be defined. If a method is not defined,
