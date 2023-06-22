@@ -27,13 +27,13 @@ class ExcelPipeline:
         self.wb = openpyxl.Workbook()
         self.ws = self.wb.active
         self.ws.title = 'customer reviews'
-        self.ws.append(('review_id','product_name','customer_name', 'customer_rating', 'customer_date', 'customer_review', 'customer_support'))
+        self.ws.append(('review_id','product_name','customer_name', 'customer_rating', 'customer_date', 'customer_review', 'customer_support', 'customer_disagree'))
 
     def open_spider(self, spider):
         pass
 
     def close_spider(self, spider):
-        self.wb.save('castorama.xlsx')
+        self.wb.save('castoramapl.xlsx')
 
     def process_item(self, item, spider):
         review_id = item.get('review_id', '')
@@ -43,7 +43,9 @@ class ExcelPipeline:
         customer_date = item.get('customer_date', '')
         customer_review = item.get('customer_review', '')
         customer_support = item.get('customer_support', '')
-        self.ws.append((review_id, product_name, customer_name, customer_rating, customer_date, customer_review, customer_support))
+        customer_disagree = item.get('customer_disagree', '')
+
+        self.ws.append((review_id, product_name, customer_name, customer_rating, customer_date, customer_review, customer_support, customer_disagree))
         return item
 
 """

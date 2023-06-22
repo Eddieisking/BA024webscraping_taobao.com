@@ -94,7 +94,7 @@ USER_AGENT_LIST = [
 ]
 
 # Obey robots.txt rules
-# ROBOTSTXT_OBEY = True
+ROBOTSTXT_OBEY = False
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
 # CONCURRENT_REQUESTS = 32
@@ -109,7 +109,7 @@ DOWNLOAD_TIMEOUT = 300
 #CONCURRENT_REQUESTS_PER_IP = 16
 
 # Disable cookies (enabled by default)
-# COOKIES_ENABLED = False
+COOKIES_ENABLED = False
 
 # Disable Telnet Console (enabled by default)
 #TELNETCONSOLE_ENABLED = False
@@ -128,9 +128,12 @@ DOWNLOAD_TIMEOUT = 300
 
 # Enable or disable downloader middlewares
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
+PROXIES_FILE = 'proxy_text.txt'
+
 DOWNLOADER_MIDDLEWARES = {
     # "webscrapy.middlewares.SeleniumMiddleware": 90,
     "webscrapy.middlewares.WebscrapyDownloaderMiddleware": 100,
+    'webscrapy.middlewares.RotateProxyMiddleware': 91,
 }
 
 # Enable or disable extensions

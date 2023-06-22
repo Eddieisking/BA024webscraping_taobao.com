@@ -6,10 +6,10 @@
 from scrapy import signals, Request
 import random
 from webscrapy.settings import USER_AGENT_LIST
+from scrapy.exceptions import IgnoreRequest, NotConfigured
 
 # useful for handling different item types with a single interface
 from itemadapter import is_item, ItemAdapter
-
 
 def get_cookies_dict():
     cookies_str = 'session-id=262-5810110-4651945; ubid-acbuk=257-6978771-9482927; lc-acbuk=en_GB; ' \
@@ -122,3 +122,70 @@ class WebscrapyDownloaderMiddleware:
 
     def spider_opened(self, spider):
         spider.logger.info("Spider opened: %s" % spider.name)
+
+class RotateProxyMiddleware:
+    def __init__(self, proxies_file):
+        self.proxies_file = proxies_file
+        self.proxies = self.load_proxies()
+        self.current_proxy = None
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        proxies_file = crawler.settings.get('PROXIES_FILE')
+        return cls(proxies_file)
+
+    def load_proxies(self):
+        with open(self.proxies_file, 'r') as file:
+            proxies = file.read().splitlines()
+        return proxies
+
+    def process_request(self, request, spider):
+        if not self.current_proxy:
+            self.current_proxy = self.get_random_proxy()
+
+        request.meta['proxy'] = self.current_proxy
+        print('current_proxy')
+        print(self.current_proxy)
+
+    def process_response(self, request, response, spider):
+        if response.status == 403:
+            self.remove_current_proxy()
+            self.current_proxy = self.get_random_proxy()
+            new_request = request.copy()
+            new_request.dont_filter = True  # Disable duplicate request filtering
+            return new_request
+        elif response.status == 307:
+            self.remove_current_proxy()
+            self.current_proxy = self.get_random_proxy()
+            new_request = request.copy()
+            new_request.dont_filter = True  # Disable duplicate request filtering
+            return new_request
+        return response
+
+    def process_exception(self, request, exception, spider):
+        if isinstance(exception, IgnoreRequest):
+            # Handle IgnoreRequest exceptions
+            if getattr(exception, 'response', None) is not None:
+                return self.process_response(request, exception.response, spider)
+            else:
+                # IgnoreRequest without a response, re-raise the exception
+                raise exception
+        elif isinstance(exception, NotConfigured):
+            # NotConfigured exception, re-raise it
+            raise exception
+        else:
+            # Handle other exceptions
+            self.remove_current_proxy()
+            self.current_proxy = self.get_random_proxy()
+            new_request = request.copy()
+            new_request.dont_filter = True  # Disable duplicate request filtering
+            return new_request
+
+    def get_random_proxy(self):
+        if not self.proxies:
+            self.proxies = self.load_proxies()  # Reload proxies from the file if the list is empty
+        return random.choice(self.proxies)
+
+    def remove_current_proxy(self):
+        if self.current_proxy in self.proxies:
+            self.proxies.remove(self.current_proxy)
