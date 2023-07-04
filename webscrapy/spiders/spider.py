@@ -1,7 +1,7 @@
 """
 Project: Web scraping for customer reviews
 Author: Hào Cui
-Date: 06/22/2023
+Date: 07/04/2023
 """
 import json
 import re
@@ -14,7 +14,7 @@ from webscrapy.items import WebscrapyItem
 
 class SpiderSpider(scrapy.Spider):
     name = "spider"
-    allowed_domains = ["www.castorama.pl", "api.bazaarvoice.com"]
+    allowed_domains = ["www.diy.com", "api.bazaarvoice.com"]
     headers = {}  #
 
     def start_requests(self):
@@ -26,30 +26,28 @@ class SpiderSpider(scrapy.Spider):
         # from search words to generate product_urls
         for keyword in keywords:
             push_key = {'keyword': keyword}
-            search_url = f'https://www.castorama.pl/search?term={keyword}'
+            search_url = f'https://www.diy.com/search?term={keyword}'
 
             yield Request(
                 url=search_url,
                 callback=self.parse,
                 cb_kwargs=push_key,
-                # meta={'proxy':'socks5://127.0.0.1:10110'},
-                # headers=self.headers
             )
 
     def parse(self, response, **kwargs):
 
         # Extract the pages of product_urls
-        page = response.xpath('//p[@data-test-id="search-options-total-results"]/text()')[0].extract()
+        page = response.xpath('//main[data-test-id="PageContent"]/div//div/p/text()')[0].extract()
         page_number = int(''.join(filter(str.isdigit, page)))
         pages = (page_number // 24) + 1
-
+        print(page_number)
         # Based on pages to build product_urls
         keyword = kwargs['keyword']
-        product_urls = [f'https://www.castorama.pl/search?page={page}&term={keyword}' for page
+        product_urls = [f'https://www.diy.com/search?page={page}&term={keyword}' for page
                         in range(1, pages+1)]
 
-        for product_url in product_urls:
-            yield Request(url=product_url, callback=self.product_parse)
+        # for product_url in product_urls:
+        #     yield Request(url=product_url, callback=self.product_parse)
 
     def product_parse(self, response: Request, **kwargs):
 
