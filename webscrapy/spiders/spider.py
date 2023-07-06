@@ -5,6 +5,7 @@ Date: 07/04/2023
 """
 import json
 import re
+from urllib.parse import urlparse, parse_qs
 
 import scrapy
 from scrapy import Request
@@ -14,7 +15,7 @@ from webscrapy.items import WebscrapyItem
 
 class SpiderSpider(scrapy.Spider):
     name = "spider"
-    allowed_domains = ["www.diy.com", "api.bazaarvoice.com"]
+    allowed_domains = ["www.gotools.de", "api.bazaarvoice.com"]
     headers = {}  #
 
     def start_requests(self):
@@ -26,7 +27,7 @@ class SpiderSpider(scrapy.Spider):
         # from search words to generate product_urls
         for keyword in keywords:
             push_key = {'keyword': keyword}
-            search_url = f'https://www.diy.com/search?term={keyword}'
+            search_url = f'https://www.gotools.de/search?query={keyword}'
 
             yield Request(
                 url=search_url,
@@ -36,82 +37,46 @@ class SpiderSpider(scrapy.Spider):
 
     def parse(self, response, **kwargs):
         # Extract the pages of product_urls
-        page = response.xpath('//*[@id="content"]//main//p[@data-test-id="search-options-total-results"]/text()')[0].extract()
-
-        # Remove any non-digit characters from the string
-        number_string = ''.join(filter(str.isdigit, page))
-
-        # Convert the extracted string into an integer
-        page_number = int(number_string)
-
-        pages = (page_number // 24) + 1
+        last_link = response.xpath('//*[@id="page-body"]//nav[@class="pagination-container"]/ul//li[@class="item pag-arrow-right"]/a[@aria-label="Zur letzten Seite"]/@href')[0].extract()
+        # Extract the page number from the last link
+        parsed_url = urlparse(last_link)
+        query_params = parse_qs(parsed_url.query)
+        page_number = int(query_params.get('page')[0])
 
         # Based on pages to build product_urls
         keyword = kwargs['keyword']
-        product_urls = [f'https://www.diy.com/search?page={page}&term={keyword}' for page
-                        in range(1, 2)]
+        product_urls = [f'https://www.gotools.de/search?query={keyword}&page={page}' for page
+                        in range(3, page_number + 1)]  # page_number + 1
 
         for product_url in product_urls:
             yield Request(url=product_url, callback=self.product_parse)
 
     def product_parse(self, response: Request, **kwargs):
-
-        product_list = response.xpath('//*[@id="content"]//main//ul/li')
+        product_list = response.xpath('//*[@id="page-body"]//ul[@class="product-list fx-row grid cross-box"]/li')
 
         for product in product_list:
-            product_href = product.xpath('.//div[@data-test-id="product-panel"]/a/@href')[0].extract()
-            product_detailed_url = f'https://www.diy.com{product_href}'
-            yield Request(url=product_detailed_url, callback=self.product_detailed_parse)
+            product_id = re.search(r'{"item":{"id":(\d+)', product.extract()).group(1)
+            product_name = re.search(r'"name1":"(.*?)",', product.extract()).group(1)
 
-    def product_detailed_parse(self, response, **kwargs):
-
-        product_id = response.xpath('.//*[@id="product-details"]//td[@data-test-id="product-ean-spec"]/text()')[
-            0].extract()
-
-        # Product reviews url
-        product_detailed_href = f'https://api.bazaarvoice.com/data/reviews.json?resource=reviews&action' \
-                                f'=REVIEWS_N_STATS&filter=productid%3Aeq%3A{product_id}&filter=contentlocale%3Aeq%3Aen_FR%2Cfr_FR' \
-                                f'%2Cen_US%2Cen_GB%2Cen_GB&filter=isratingsonly%3Aeq%3Afalse&filter_reviews' \
-                                f'=contentlocale%3Aeq%3Aen_FR%2Cfr_FR%2Cen_US%2Cen_GB%2Cen_GB&include=authors' \
-                                f'%2Cproducts&filteredstats=reviews&Stats=Reviews&limit=8&offset=0&sort' \
-                                f'=submissiontime%3Adesc&passkey=7db2nllxwguwj2eu7fxvvgm0t&apiversion=5.5&displaycode' \
-                                f'=2191-en_gb '
-
-        if product_detailed_href:
-            yield Request(url=product_detailed_href, callback=self.review_parse)
+            customer_review_url = f'https://www.gotools.de/rest/feedbacks/feedback/helper/feedbacklist/{product_id}/1?feedbacksPerPage=10'
+            yield Request(url=customer_review_url, callback=self.review_parse, meta={'product_id': product_id, 'product_name': product_name})
 
     def review_parse(self, response: Request, **kwargs):
-
+        product_id = response.meta['product_id']
+        product_name = response.meta['product_name']
         datas = json.loads(response.body)
-        batch_results = datas.get('Results', {})
+        batch_results = datas.get('feedbacks', {})
 
-        offset_number = 0
-        limit_number = 0
-        total_number = 0
-
-        # if "q1" in batch_results:
-        #     result_key = "q1"
-        # else:
-        #     result_key = "q0"
-
-        offset_number = datas.get('Offset', 0)
-        limit_number = datas.get('Limit', 0)
-        total_number = datas.get('TotalResults', 0)
-
-        print('offset_number, limit_number, total_number')
-        print(offset_number, limit_number, total_number)
-
-        for i in range(limit_number):
+        for i in range(len(batch_results)):
             item = WebscrapyItem()
-            # results = batch_results.get(result_key, {}).get('Results', [])
 
             try:
-                item['review_id'] = batch_results[i].get('Id', 'N/A')
-                item['product_name'] = batch_results[i].get('ProductId', 'N/A')
-                item['customer_name'] = batch_results[i].get('UserNickname', 'Anonymous')
-                item['customer_rating'] = batch_results[i].get('Rating', 'N/A')
-                item['customer_date'] = batch_results[i].get('SubmissionTime', 'N/A')
-                item['customer_review'] = batch_results[i].get('ReviewText', 'N/A')
+                item['review_id'] = batch_results[i].get('feedbackComment', 'N/A').get('commentId', 'N/A')
+                item['product_name'] = product_name or product_id
+                item['customer_name'] = batch_results[i].get('authorName', 'Anonymous')
+                item['customer_rating'] = batch_results[i].get('feedbackRating', 'N/A').get('rating', 'N/A').get('ratingValue', 'N/A')
+                item['customer_date'] = batch_results[i].get('feedbackComment', 'N/A').get('comment', 'N/A').get('createdAt', 'N/A')
+                item['customer_review'] = batch_results[i].get('feedbackComment', 'N/A').get('comment', 'N/A').get('message', 'N/A')
                 item['customer_support'] = batch_results[i].get('TotalPositiveFeedbackCount', 'N/A')
                 item['customer_disagree'] = batch_results[i].get('TotalNegativeFeedbackCount', 'N/A')
 
@@ -120,8 +85,4 @@ class SpiderSpider(scrapy.Spider):
                 print('Exception:', e)
                 break
 
-        if (offset_number + limit_number) < total_number:
-            offset_number += limit_number
-            next_page = re.sub(r'limit=\d+&offset=\d+', f'limit={30}&offset={offset_number}', response.url)
-            yield Request(url=next_page, callback=self.review_parse)
 
