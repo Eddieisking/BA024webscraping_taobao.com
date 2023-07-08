@@ -3,86 +3,140 @@ Project: Web scraping for customer reviews
 Author: Hào Cui
 Date: 07/04/2023
 """
-import json
-import re
-from urllib.parse import urlparse, parse_qs
+import time
 
 import scrapy
 from scrapy import Request
+from scrapy.http import HtmlResponse
+from scrapy.selector import Selector
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.wait import WebDriverWait
 
+from utils import create_chrome_driver, add_cookies
 from webscrapy.items import WebscrapyItem
 
 
 class SpiderSpider(scrapy.Spider):
     name = "spider"
-    allowed_domains = ["www.gotools.de", "api.bazaarvoice.com"]
-    headers = {}  #
+    allowed_domains = ["taobao.com", "detail.tmall.com", "h5api.m.tmall.com", "s.taobao.com"]
+    middleware = None
+
+    def __init__(self, name=None, **kwargs):
+        super().__init__(name=name, **kwargs)
+        self.browser = None
 
     def start_requests(self):
         # keywords = ['DeWalt', 'Black+and+Decker', 'Stanley', 'Craftsman', 'Porter-Cable', 'Bostitch', 'Irwin+Tools',
         #             'Lenox']
         # company = 'Stanley Black and Decker'
 
-        keywords = ['dewalt']
-        # from search words to generate product_urls
+        keywords = ['得伟官方旗舰店官网']
+        """from search words to generate product_urls"""
         for keyword in keywords:
-            push_key = {'keyword': keyword}
-            search_url = f'https://www.gotools.de/search?query={keyword}'
+            for page in range(2):
+                search_url = f'https://s.taobao.com/search?q={keyword}&s={page * 48}'
+                yield self.selenium_request(url=search_url)
 
-            yield Request(
-                url=search_url,
-                callback=self.parse,
-                cb_kwargs=push_key,
-            )
+    def selenium_request(self, url):
+        self.browser = create_chrome_driver(headless=False)
+        self.browser.get('https://taobao.com')
+        add_cookies(self.browser, 'taobao.json')
+        self.browser.get(url)
+        time.sleep(5)
+        # Get the page source and create an HtmlResponse
+        body = self.browser.page_source
+        response = HtmlResponse(url=url, body=body, encoding='utf-8')
+
+        # Create a new Request object based on the HtmlResponse
+        request = Request(url=url, meta={'response': response}, callback=self.parse)
+        request.meta['dont_filter'] = False  # Set the dont_filter attribute
+
+        return request
 
     def parse(self, response, **kwargs):
-        # Extract the pages of product_urls
-        last_link = response.xpath('//*[@id="page-body"]//nav[@class="pagination-container"]/ul//li[@class="item pag-arrow-right"]/a[@aria-label="Zur letzten Seite"]/@href')[0].extract()
-        # Extract the page number from the last link
-        parsed_url = urlparse(last_link)
-        query_params = parse_qs(parsed_url.query)
-        page_number = int(query_params.get('page')[0])
-
-        # Based on pages to build product_urls
-        keyword = kwargs['keyword']
-        product_urls = [f'https://www.gotools.de/search?query={keyword}&page={page}' for page
-                        in range(3, page_number + 1)]  # page_number + 1
-
-        for product_url in product_urls:
-            yield Request(url=product_url, callback=self.product_parse)
-
-    def product_parse(self, response: Request, **kwargs):
-        product_list = response.xpath('//*[@id="page-body"]//ul[@class="product-list fx-row grid cross-box"]/li')
+        html_response = response.meta['response']
+        selector = Selector(response=html_response)
+        product_list = selector.xpath('//div[@class="Content--contentInner--QVTcU0M"]/div')
 
         for product in product_list:
-            product_id = re.search(r'{"item":{"id":(\d+)', product.extract()).group(1)
-            product_name = re.search(r'"name1":"(.*?)",', product.extract()).group(1)
-
-            customer_review_url = f'https://www.gotools.de/rest/feedbacks/feedback/helper/feedbacklist/{product_id}/1?feedbacksPerPage=10'
-            yield Request(url=customer_review_url, callback=self.review_parse, meta={'product_id': product_id, 'product_name': product_name})
-
-    def review_parse(self, response: Request, **kwargs):
-        product_id = response.meta['product_id']
-        product_name = response.meta['product_name']
-        datas = json.loads(response.body)
-        batch_results = datas.get('feedbacks', {})
-
-        for i in range(len(batch_results)):
-            item = WebscrapyItem()
-
             try:
-                item['review_id'] = batch_results[i].get('feedbackComment', 'N/A').get('commentId', 'N/A')
-                item['product_name'] = product_name or product_id
-                item['customer_name'] = batch_results[i].get('authorName', 'Anonymous')
-                item['customer_rating'] = batch_results[i].get('feedbackRating', 'N/A').get('rating', 'N/A').get('ratingValue', 'N/A')
-                item['customer_date'] = batch_results[i].get('feedbackComment', 'N/A').get('comment', 'N/A').get('createdAt', 'N/A')
-                item['customer_review'] = batch_results[i].get('feedbackComment', 'N/A').get('comment', 'N/A').get('message', 'N/A')
-                item['customer_support'] = batch_results[i].get('TotalPositiveFeedbackCount', 'N/A')
-                item['customer_disagree'] = batch_results[i].get('TotalNegativeFeedbackCount', 'N/A')
+                product_url = f'https:' + product.xpath('./a/@href')[0].extract()
 
-                yield item
-            except Exception as e:
-                print('Exception:', e)
+                if 'detail.tmall.com' in product_url:
+                    yield from self.selenium_request_new(url=product_url)  # Use yield from to delegate the generator
+            except:
+                pass
+
+    def selenium_request_new(self, url):
+        """Click the customer review button"""
+        self.browser.get(url)
+
+        comment_button = self.browser.find_element(By.XPATH,
+                                                   '//div[@class="Tabs--title--1Ov7S5f "]')
+        comment_button.click()
+        time.sleep(5)
+
+        """Pass the first page of response to scrapy to parse"""
+        # Get the page source and create an HtmlResponse
+        body = self.browser.page_source
+        response = HtmlResponse(url=url, body=body, encoding='utf-8')
+
+        # Create a new Request object based on the HtmlResponse
+        request = Request(url=url, meta={'response': response}, callback=self.customer_review_parse,
+                          dont_filter=True)
+
+        yield request
+
+        """Click the next page of customer review button"""
+        while True:
+            # Find the next button and store its reference
+            next_button = self.browser.find_element(By.XPATH,
+                                                    '//button[@class="detail-btn Comments--nextBtn--1itIAip"]')
+
+            # Click the next button
+            next_button.click()
+
+            # Wait for the new content to load
+            WebDriverWait(self.browser, 10).until(
+                EC.presence_of_element_located((By.XPATH, '//div[@class="Comments--comments--1662-Lt"]')))
+
+            """Pass the loaded response to scrapy to parse"""
+            # Get the page source and create an HtmlResponse
+            body = self.browser.page_source
+            response = HtmlResponse(url=url, body=body, encoding='utf-8')
+
+            # Create a new Request object based on the HtmlResponse
+            request = Request(url=url, meta={'response': response}, callback=self.customer_review_parse,
+                              dont_filter=True)
+
+            yield request
+
+            # Re-locate the next button element after the page refreshes
+            next_button_new = WebDriverWait(self.browser, 10).until(
+                EC.presence_of_element_located(
+                    (By.XPATH, '//button[@class="detail-btn Comments--nextBtn--1itIAip"]')))
+
+            if not next_button_new.is_enabled():
+                print('Not enabled')
+                self.browser.quit()
                 break
+            print('Continue to the next page')
 
+    def customer_review_parse(self, response, **kwargs):
+        html_response = response.meta['response']
+        selector = Selector(response=html_response)
+
+        review_list = selector.xpath('//div[@class="Comments--comments--1662-Lt"]/div')
+
+        for review in review_list:
+            item = WebscrapyItem()
+            item['product_name'] = selector.xpath('//div[@class="ItemHeader--root--DXhqHxP"]/h1/text()')[0].extract() or 'N/A'
+            item['customer_name'] = review.xpath('.//div[@class="Comment--userName--2cONG4D"]/text()')[0].extract()
+            item['customer_date'] = review.xpath('.//div[@class="Comment--meta--1MFXGJ1"]/text()')[0].extract() or 'N/A'
+            item['customer_review'] = review.xpath('.//div[@class="Comment--content--15w7fKj"]/text()')[0].extract() or 'N/A'
+            item['customer_support'] = review.xpath('.//div[@class="Comment--like--1swbsLo "]/button/span/text()')[0].extract() or 'N/A'
+            # item['customer_browse'] = review.xpath('.//div[@class="Comment--visited--2t0QSw-"]/text()')[0].extract() or 'N/A'
+
+            yield item
 

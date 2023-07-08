@@ -20,6 +20,7 @@ import re
     customer_support = scrapy.Field()
 """
 
+
 # Pipeline for Excel
 class ExcelPipeline:
 
@@ -27,26 +28,29 @@ class ExcelPipeline:
         self.wb = openpyxl.Workbook()
         self.ws = self.wb.active
         self.ws.title = 'customer reviews'
-        self.ws.append(('review_id','product_name','customer_name', 'customer_rating', 'customer_date', 'customer_review', 'customer_support', 'customer_disagree'))
+        self.ws.append(('product_name', 'customer_name', 'customer_date', 'customer_review', 'customer_support',
+                        'customer_browse'))
 
     def open_spider(self, spider):
         pass
 
     def close_spider(self, spider):
-        self.wb.save('gotools.xlsx')
+        self.wb.save('taobao.xlsx')
 
     def process_item(self, item, spider):
-        review_id = item.get('review_id', '')
+        # review_id = item.get('review_id', '')
         product_name = item.get('product_name', '')
         customer_name = item.get('customer_name', '')
-        customer_rating = item.get('customer_rating', '')
+        # customer_rating = item.get('customer_rating', '')
         customer_date = item.get('customer_date', '')
         customer_review = item.get('customer_review', '')
         customer_support = item.get('customer_support', '')
-        customer_disagree = item.get('customer_disagree', '')
+        # customer_disagree = item.get('customer_disagree', '')
+        customer_browse = item.get('customer_browse', '')
 
-        self.ws.append((review_id, product_name, customer_name, customer_rating, customer_date, customer_review, customer_support, customer_disagree))
+        self.ws.append((product_name, customer_name, customer_date, customer_review, customer_support, customer_browse))
         return item
+
 
 """
     review_id = scrapy.Field()
@@ -57,6 +61,8 @@ class ExcelPipeline:
     customer_review = scrapy.Field()
     customer_support = scrapy.Field()
 """
+
+
 # Pipeline for sql
 def remove_unappealing_characters(text):
     # Remove emojis
@@ -105,6 +111,3 @@ def remove_unappealing_characters(text):
 #             self.data
 #         )
 #         self.conn.commit()
-
-
-

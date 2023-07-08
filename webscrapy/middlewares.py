@@ -2,20 +2,47 @@
 #
 # See documentation in:
 # https://docs.scrapy.org/en/latest/topics/spider-middleware.html
+import time
 
 from scrapy import signals, Request
 import random
+from selenium.webdriver.common.by import By
+
+from scrapy.http import HtmlResponse
+from selenium.common.exceptions import NoSuchElementException
+
+from utils import create_chrome_driver, add_cookies
 from webscrapy.settings import USER_AGENT_LIST
 from scrapy.exceptions import IgnoreRequest, NotConfigured
+import logging
+
 
 # useful for handling different item types with a single interface
 from itemadapter import is_item, ItemAdapter
 
 def get_cookies_dict():
-    cookies_str = 'session-id=262-5810110-4651945; ubid-acbuk=257-6978771-9482927; lc-acbuk=en_GB; ' \
-                  'av-timezone=Europe/London; ' \
-                  'session-token=DOVZpTftMkUoO5VyBKks7lmDekubDW0tOJ/Y8RFlRCDcQNMY9anb57YIE61uvnNfAPAU66EyGAc8DqO' \
-                  '/ZMK3goltzXQk74bkMIZ3blfypkZD9i4g5AO2dfs6WUwoHB4od8kwqIOj6ES9kJW0weMmjYApvtAIk6gWp5CjVLJ47uP0nRCUiTs8G5JIMsqjwxfHtGnWSqgR2I+lwltG3l0/liTbKeUAkXFyLxSQr9zz0ZafpcrzIKJceuTtwMyRk8sD; x-acbuk="shubALQENXQDItWhyI3ywt5EDiCNBbXUzZxfVHH9lWROOPcIA1q?BbuwaQt63DTE"; at-acbuk=Atza|IwEBIFEhoQBEgsl13zRH7tbqZZsLkFdSErJL6Jpi6Ifp9c_RyZ1tOhe7IfKF6nnJIh4hUThrCCZEVx6oYY0G15ffaTbjgdGYLF135v9-KfnBvEYFIpug_gBh3M1fdnB6lZZD8XTNQz-jsWttVgTtHuEzksP1pNtNsThE4BRKD4DtFSgu34T2Q5eImhkKWwlSTfSYcE1XeAhMnuxcQBcuS-TRVIc5NXki7U0ydlVIKkGvCyZKRg; sess-at-acbuk="+dmR+g8Ip+sCWW69DkUyjUV8hffpBaRX/184ZeqVZPk="; sst-acbuk=Sst1|PQH59LJBGdPDpiPYay9TQjKgCTur4B_PjtkbLg3tmdmH6cMrIfsn-19grn3avly8z5lHqWBXUDrgslHmXWeLxndLGO-_TnF9FBKniR-hLl-W7O7kH0vpUajOjSAEJZUvTND9zvrxQP375bqjQyzEiGM-nVmoeQ4l9pv2EelRBehMRHyMjebmhyz5kVmW5-wZo3ui_7ZIoOIGw_nUBzx-s64hnjZ_Lpl9lN1fSst5eCzgt3nK74MqKlowJkghFOAoHFjU5nsP2vmzyq6GEgxUVOG9MIABXnggOQRzXyw9wJwNWtc; session-id-time=2082787201l; i18n-prefs=GBP; csm-hit=tb:XWX730Q202Q0YG44CV43+s-XWX730Q202Q0YG44CV43|1686670523540&t:1686670523540&adb:adblk_no '
+    cookies_str = 'thw=xx; t=905d11a40b9a0de6d81f56c057edf4e0; hng=GLOBAL%7Czh-CN%7CUSD%7C999; ' \
+                  'cna=pqsZHdMvCjgCAYHqAKtK5hw6; _gid=GA1.2.1538006377.1688744321; ' \
+                  '_m_h5_tk=03303be79014476695ed95b207ab02d6_1688753681366; ' \
+                  '_m_h5_tk_enc=b1bad9a68b6332fbc24b21b22e27d3bf; xlly_s=1; cookie2=157ce1285065e2a4192780f4c3a03af9; ' \
+                  '_tb_token_=73903e376791b; _samesite_flag_=true; alitrackid=world.taobao.com; ' \
+                  'lastalitrackid=world.taobao.com; ' \
+                  'sgcookie=E100Pc5yfLkManFEAnn1z9ixqh20S78GPJwW2dJOBvWCCi9edcA' \
+                  '%2BQgmZpQRqlU0CX3EMGNxvhGEsziwBpCmvsXn2L0yWYbe6oSPDLzvyNWzEQX%2FM3mKLC9%2B3rTNKeJWenEk6; ' \
+                  'unb=3992931653; uc1=cookie21=URm48syIYn73&cookie14=Uoe8gqe85VQ2sA%3D%3D&cookie15=UtASsssmOIJ0bQ%3D' \
+                  '%3D&pas=0&existShop=false&cookie16=URm48syIJ1yk0MX2J7mAAEhTuw%3D%3D; ' \
+                  'uc3=lg2=Vq8l%2BKCLz3%2F65A%3D%3D&id2=UNk%2Bf7g1WFFmzQ%3D%3D&vt3=F8dCsGIJ0ba0LVRSsT0%3D&nk2' \
+                  '=F5RMGyOjhi5UaxU%3D; csg=3279b3cd; lgc=tb920300083; cancelledSubSites=empty; ' \
+                  'cookie17=UNk%2Bf7g1WFFmzQ%3D%3D; dnk=tb920300083; skt=4cad3ac02e2944b9; ' \
+                  'existShop=MTY4ODc0NDQ0OA%3D%3D; ' \
+                  'uc4=nk4=0%40FY4HXgnfncfxpx9w4V1ufY3KwhRIMw%3D%3D&id4=0%40Ug40foE3DS9w50zCwzaHQDXdYAI%2F; ' \
+                  'tracknick=tb920300083; _cc_=UtASsssmfA%3D%3D; _l_g_=Ug%3D%3D; sg=33a; _nk_=tb920300083; ' \
+                  'cookie1=W8GLs2QPn6Dpd2sg7XuFTsY10SfHyzwtNdT%2BJ1HVBnE%3D; ' \
+                  '_uetsid=5906c7e01cdc11ee9ee69730a376039c; _uetvid=f20724b0101211eeb6b06b52270ae4c4; ' \
+                  '_ga=GA1.2.1111595517.1687338405; _ga_YFVFB9JLVB=GS1.1.1688744320.2.1.1688744949.0.0.0; ' \
+                  'JSESSIONID=F74ED308F917BFFA63DE747CA5937D38; ' \
+                  'isg=BDs7zMAg2-oNrudkoI8bXS-kyhmlkE-ShZHWoS35SjpjjFlutWAF4-UFpjzCrKeK; ' \
+                  'l=fBjg_8LrNpmyxD_GBO5aourza77OaIObzsPzaNbMiIEGa1yh9IxumNC1X9LkWdtj3T5XbetPl_pr6dnWJRzU5skDBeYBRs5mpeJwReOmrtHl.; tfstk=cNwdB9NS7GKp8qQoQvCGUAM2YAjGa4ftzBgDeJZsXUvNZNTWysvTn-K-dMiju2IO. '
     cookies_dict = {}
     for item in cookies_str.split('; '):
         key, value = item.split('=', maxsplit=1)
@@ -81,8 +108,16 @@ class WebscrapyDownloaderMiddleware:
     def from_crawler(cls, crawler):
         # This method is used by Scrapy to create your spiders.
         s = cls()
-        crawler.signals.connect(s.spider_opened, signal=signals.spider_opened)
+        # crawler.signals.connect(s.spider_opened, signal=signals.spider_opened)
         return s
+
+    # def __init__(self):
+    #     self.browser = create_chrome_driver(headless=False)
+    #     self.browser.get('https://taobao.com')
+    #     add_cookies(self.browser, 'taobao.json')
+
+    # def __del__(self):
+    #     self.browser.close()
 
     def process_request(self, request: Request, spider):
         # Called for each request that goes through the downloader
@@ -96,8 +131,20 @@ class WebscrapyDownloaderMiddleware:
         #   installed downloader middleware will be called
         # request.cookies = COOKIES
         # request.meta = {'proxy': 'socks5://127.0.0.1:10808'}
-        ua = random.choice(USER_AGENT_LIST)
-        request.headers['User-Agent'] = ua
+        # ua = random.choice(USER_AGENT_LIST)
+        # request.headers['User-Agent'] = ua
+        # # self.browser.implicitly_wait(5)
+        # self.browser.get(request.url)
+        #
+        # try:
+        #     comment_button = self.browser.find_element(By.XPATH,
+        #                                                '//div[@class="Tabs--title--1Ov7S5f "]')
+        #     comment_button.click()
+        #     time.sleep(5)
+        # except NoSuchElementException:
+        #     pass
+        #
+        # return HtmlResponse(url=request.url, body=self.browser.page_source, request=request, encoding='utf-8')
 
         return None
 
