@@ -24,7 +24,7 @@ username_input.send_keys('qwer1122')
 login_button = browser.find_element(By.CSS_SELECTOR, '#login-form > div.fm-btn > button')
 login_button.click()
 
-time.sleep(10)
+# time.sleep(10)
 wait_obj = WebDriverWait(browser, 10)
 wait_obj.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'div.m-userinfo')))
 

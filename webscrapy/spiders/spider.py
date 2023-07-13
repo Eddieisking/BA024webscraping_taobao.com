@@ -34,7 +34,7 @@ class SpiderSpider(scrapy.Spider):
         keywords = ['得伟官方旗舰店官网']
         """from search words to generate product_urls"""
         for keyword in keywords:
-            for page in range(2):
+            for page in range(1):
                 search_url = f'https://s.taobao.com/search?q={keyword}&s={page * 48}'
                 yield self.selenium_request(url=search_url)
 
@@ -57,71 +57,80 @@ class SpiderSpider(scrapy.Spider):
     def parse(self, response, **kwargs):
         html_response = response.meta['response']
         selector = Selector(response=html_response)
-        product_list = selector.xpath('//div[@class="Content--contentInner--QVTcU0M"]/div')
+        product_list = selector.xpath('//div[@class="m-itemlist"]//div[@class="items"]/div')
 
+        review_list = []
         for product in product_list:
             try:
-                product_url = f'https:' + product.xpath('./a/@href')[0].extract()
+                product_url = f'https:' + product.xpath('.//div[@class="row row-2 title"]/a/@href')[0].extract()
 
                 if 'detail.tmall.com' in product_url:
-                    yield from self.selenium_request_new(url=product_url)  # Use yield from to delegate the generator
+                    review_list.append(product_url)
             except:
                 pass
+        # start_url = 'https://taobao.com'
 
-    def selenium_request_new(self, url):
+        yield from self.selenium_request_new(review_list=review_list)  # Use yield from to delegate the generator
+
+    def selenium_request_new(self, review_list):
         """Click the customer review button"""
-        self.browser.get(url)
+        for review_url in review_list:
 
-        comment_button = self.browser.find_element(By.XPATH,
-                                                   '//div[@class="Tabs--title--1Ov7S5f "]')
-        comment_button.click()
-        time.sleep(5)
+            self.browser = create_chrome_driver(headless=False)
+            self.browser.get('https://taobao.com')
+            add_cookies(self.browser, 'taobao.json')
+            self.browser.get(review_url)
 
-        """Pass the first page of response to scrapy to parse"""
-        # Get the page source and create an HtmlResponse
-        body = self.browser.page_source
-        response = HtmlResponse(url=url, body=body, encoding='utf-8')
+            comment_button = self.browser.find_element(By.XPATH,
+                                                       '//div[@class="Tabs--title--1Ov7S5f "]')
+            comment_button.click()
+            time.sleep(5)
 
-        # Create a new Request object based on the HtmlResponse
-        request = Request(url=url, meta={'response': response}, callback=self.customer_review_parse,
-                          dont_filter=True)
-
-        yield request
-
-        """Click the next page of customer review button"""
-        while True:
-            # Find the next button and store its reference
-            next_button = self.browser.find_element(By.XPATH,
-                                                    '//button[@class="detail-btn Comments--nextBtn--1itIAip"]')
-
-            # Click the next button
-            next_button.click()
-
-            # Wait for the new content to load
-            WebDriverWait(self.browser, 10).until(
-                EC.presence_of_element_located((By.XPATH, '//div[@class="Comments--comments--1662-Lt"]')))
-
-            """Pass the loaded response to scrapy to parse"""
+            """Pass the first page of response to scrapy to parse"""
             # Get the page source and create an HtmlResponse
             body = self.browser.page_source
-            response = HtmlResponse(url=url, body=body, encoding='utf-8')
+            response = HtmlResponse(url=review_url, body=body, encoding='utf-8')
 
             # Create a new Request object based on the HtmlResponse
-            request = Request(url=url, meta={'response': response}, callback=self.customer_review_parse,
+            request = Request(url=review_url, meta={'response': response}, callback=self.customer_review_parse,
                               dont_filter=True)
 
             yield request
 
-            # Re-locate the next button element after the page refreshes
-            next_button_new = WebDriverWait(self.browser, 10).until(
-                EC.presence_of_element_located(
-                    (By.XPATH, '//button[@class="detail-btn Comments--nextBtn--1itIAip"]')))
+            """Click the next page of customer review button"""
+            while True:
+                # Find the next button and store its reference
+                next_button = self.browser.find_element(By.XPATH,
+                                                        '//button[@class="detail-btn Comments--nextBtn--1itIAip"]')
 
-            if not next_button_new.is_enabled():
-                print('Not enabled')
-                self.browser.quit()
-                break
-            print('Continue to the next page')
+                # Click the next button
+                next_button.click()
+
+                # Wait for the new content to load
+                WebDriverWait(self.browser, 10).until(
+                    EC.presence_of_element_located((By.XPATH, '//div[@class="Comments--comments--1662-Lt"]')))
+
+                """Pass the loaded response to scrapy to parse"""
+                # Get the page source and create an HtmlResponse
+                body = self.browser.page_source
+                response = HtmlResponse(url=review_url, body=body, encoding='utf-8')
+
+                # Create a new Request object based on the HtmlResponse
+                request = Request(url=review_url, meta={'response': response}, callback=self.customer_review_parse,
+                                  dont_filter=True)
+
+                yield request
+
+                # Re-locate the next button element after the page refreshes
+                next_button_new = WebDriverWait(self.browser, 10).until(
+                    EC.presence_of_element_located(
+                        (By.XPATH, '//button[@class="detail-btn Comments--nextBtn--1itIAip"]')))
+
+                if not next_button_new.is_enabled():
+                    print('Not enabled')
+                    self.browser.quit()
+                    break
+                print('Continue to the next page')
 
     def customer_review_parse(self, response, **kwargs):
         html_response = response.meta['response']
