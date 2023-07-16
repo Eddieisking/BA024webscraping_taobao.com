@@ -142,7 +142,7 @@ class DatabasePipeline:
         customer_rating = 'N/A'
         customer_date = convert_to_datetime(extract_date_info(item.get('customer_date', '')))
 
-        customer_review = item.get('customer_review', '')
+        customer_review = item.get('customer_review', '')[0:1999]
         customer_support = extract_number(item.get('customer_support', ''))
         # customer_disagree = item.get('customer_disagree', '')
         customer_disagree = 'N/A'
