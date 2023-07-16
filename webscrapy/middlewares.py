@@ -131,8 +131,8 @@ class WebscrapyDownloaderMiddleware:
         #   installed downloader middleware will be called
         # request.cookies = COOKIES
         # request.meta = {'proxy': 'socks5://127.0.0.1:10808'}
-        # ua = random.choice(USER_AGENT_LIST)
-        # request.headers['User-Agent'] = ua
+        ua = random.choice(USER_AGENT_LIST)
+        request.headers['User-Agent'] = ua
         # # self.browser.implicitly_wait(5)
         # self.browser.get(request.url)
         #
