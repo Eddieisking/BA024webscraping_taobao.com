@@ -27,14 +27,14 @@ class SpiderSpider(scrapy.Spider):
         self.browser = None
 
     def start_requests(self):
-        # keywords = ['DeWalt', 'Black+and+Decker', 'Stanley', 'Craftsman', 'Porter-Cable', 'Bostitch', 'Irwin+Tools',
-        #             'Lenox']
+        # keywords = ['Stanley', 'Black+Decker', 'Craftsman', 'Porter-Cable', 'Bostitch', 'Facom', 'MAC Tools', 'Vidmar', 'Lista', 'Irwin Tools', 'Lenox', 'Proto', 'CribMaster', 'Powers Fasteners', 'cub-cadet', 'hustler', 'troy-bilt', 'rover', 'BigDog Mower', 'MTD']
+        exist_keywords = ['得伟官方旗舰店官网', '史丹利 工具', 'Facom', 'Irwin', ]
         # company = 'Stanley Black and Decker'
 
-        keywords = ['得伟官方旗舰店官网']
+        keywords = ['Irwin']
         """from search words to generate product_urls"""
         for keyword in keywords:
-            for page in range(1):
+            for page in range(16):  # page=7
                 search_url = f'https://s.taobao.com/search?q={keyword}&s={page * 48}'
                 yield self.selenium_request(url=search_url)
 
@@ -74,6 +74,7 @@ class SpiderSpider(scrapy.Spider):
         # yield from self.selenium_request_new(review_list=review_list)  # Use yield from to delegate the generator
 
     def selenium_request_new(self, url):
+        replace_url = "https://taobao.com"
         """Click the customer review button"""
         review_url = url
         # self.browser = create_chrome_driver(headless=False)
@@ -89,10 +90,10 @@ class SpiderSpider(scrapy.Spider):
         """Pass the first page of response to scrapy to parse"""
         # Get the page source and create an HtmlResponse
         body = self.browser.page_source
-        response = HtmlResponse(url=review_url, body=body, encoding='utf-8')
+        response = HtmlResponse(url=replace_url, body=body, encoding='utf-8')
 
         # Create a new Request object based on the HtmlResponse
-        request = Request(url=review_url, meta={'response': response}, callback=self.customer_review_parse,
+        request = Request(url=replace_url, meta={'response': response}, callback=self.customer_review_parse,
                           dont_filter=True)
 
         yield request
@@ -113,10 +114,10 @@ class SpiderSpider(scrapy.Spider):
             """Pass the loaded response to scrapy to parse"""
             # Get the page source and create an HtmlResponse
             body = self.browser.page_source
-            response = HtmlResponse(url=review_url, body=body, encoding='utf-8')
+            response = HtmlResponse(url=replace_url, body=body, encoding='utf-8')
 
             # Create a new Request object based on the HtmlResponse
-            request = Request(url=review_url, meta={'response': response}, callback=self.customer_review_parse,
+            request = Request(url=replace_url, meta={'response': response}, callback=self.customer_review_parse,
                               dont_filter=True)
 
             yield request
