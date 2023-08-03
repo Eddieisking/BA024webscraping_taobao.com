@@ -4,7 +4,7 @@ Author: Hào Cui
 Date: 07/04/2023
 """
 import time
-
+import re
 import scrapy
 from scrapy import Request
 from scrapy.http import HtmlResponse
@@ -29,13 +29,17 @@ class SpiderSpider(scrapy.Spider):
     def start_requests(self):
         # keywords = ['Stanley', 'Black+Decker', 'Craftsman', 'Porter-Cable', 'Bostitch', 'Facom', 'MAC Tools', 'Vidmar', 'Lista', 'Irwin Tools', 'Lenox', 'Proto', 'CribMaster', 'Powers Fasteners', 'cub-cadet', 'hustler', 'troy-bilt', 'rover', 'BigDog Mower', 'MTD']
         exist_keywords = ['得伟官方旗舰店官网', '史丹利 工具', 'Facom', 'Irwin', ]
-        # company = 'Stanley Black and Decker'
 
-        keywords = ['Irwin']
-        """from search words to generate product_urls"""
-        for keyword in keywords:
-            for page in range(16):  # page=7
-                search_url = f'https://s.taobao.com/search?q={keyword}&s={page * 48}'
+        brand_page_data = [
+            ('得伟官方旗舰店官网', 2),
+            ('史丹利 工具', 8),  # *****************************************************************************
+            ('Facom', 9),# *****************************************************************************
+            ('Irwin', 15),# *****************************************************************************
+        ]
+
+        for brand, page in brand_page_data:
+            for page_num in range(0, page):
+                search_url = f'https://s.taobao.com/search?q={brand}&s={page_num * 48}'
                 yield self.selenium_request(url=search_url)
 
     def selenium_request(self, url):
@@ -63,17 +67,20 @@ class SpiderSpider(scrapy.Spider):
         for product in product_list:
             try:
                 product_url = f'https:' + product.xpath('.//div[@class="row row-2 title"]/a/@href')[0].extract()
-
                 if 'detail.tmall.com' in product_url:
                     review_list.append(product_url)
                     yield from self.selenium_request_new(url=product_url)
             except:
                 pass
         # start_url = 'https://taobao.com'
-
         # yield from self.selenium_request_new(review_list=review_list)  # Use yield from to delegate the generator
 
     def selenium_request_new(self, url):
+        # Initialize variables to store the attributes
+        product_brand = 'N/A'
+        product_model = 'N/A'
+        product_type = 'N/A'
+
         replace_url = "https://taobao.com"
         """Click the customer review button"""
         review_url = url
@@ -81,6 +88,18 @@ class SpiderSpider(scrapy.Spider):
         # self.browser.get('https://taobao.com')
         # add_cookies(self.browser, 'taobao.json')
         self.browser.get(review_url)
+        time.sleep(1)
+        page_source = self.browser.page_source
+        product_detail = re.findall(r'title="(.*?)"', page_source)
+
+        for product_text in product_detail:
+            if '品牌' in product_text:
+                product_brand = re.search(r'品牌：\s*(.*)', product_text).group(1)
+            elif '型号' in product_text:
+                product_model = re.search(r'型号：\s*(.*)', product_text).group(1)
+            elif '类型' in product_text:
+                product_type = re.search(r'类型：\s*(.*)', product_text).group(1)
+
         """Slider Validation"""
         comment_button = self.browser.find_element(By.XPATH,
                                                    '//div[@class="Tabs--title--1Ov7S5f "]')
@@ -93,7 +112,7 @@ class SpiderSpider(scrapy.Spider):
         response = HtmlResponse(url=replace_url, body=body, encoding='utf-8')
 
         # Create a new Request object based on the HtmlResponse
-        request = Request(url=replace_url, meta={'response': response}, callback=self.customer_review_parse,
+        request = Request(url=replace_url, meta={'response': response, 'product_brand':product_brand, 'product_model':product_model, 'product_type':product_type}, callback=self.customer_review_parse,
                           dont_filter=True)
 
         yield request
@@ -117,7 +136,7 @@ class SpiderSpider(scrapy.Spider):
             response = HtmlResponse(url=replace_url, body=body, encoding='utf-8')
 
             # Create a new Request object based on the HtmlResponse
-            request = Request(url=replace_url, meta={'response': response}, callback=self.customer_review_parse,
+            request = Request(url=replace_url, meta={'response': response, 'product_brand':product_brand, 'product_model':product_model, 'product_type':product_type}, callback=self.customer_review_parse,
                               dont_filter=True)
 
             yield request
@@ -137,6 +156,10 @@ class SpiderSpider(scrapy.Spider):
             print('Continue to the next page')
 
     def customer_review_parse(self, response, **kwargs):
+        product_type = response.meta['product_type']
+        product_brand = response.meta['product_brand']
+        product_model = response.meta['product_model']
+
         html_response = response.meta['response']
         selector = Selector(response=html_response)
 
@@ -144,6 +167,10 @@ class SpiderSpider(scrapy.Spider):
 
         for review in review_list:
             item = WebscrapyItem()
+            item['product_website'] = 'taobao_cn'
+            item['product_type'] = product_type
+            item['product_brand'] = product_brand
+            item['product_model'] = product_model
             item['product_name'] = selector.xpath('//div[@class="ItemHeader--root--DXhqHxP"]/h1/text()')[0].extract() or 'N/A'
             item['customer_name'] = review.xpath('.//div[@class="Comment--userName--2cONG4D"]/text()')[0].extract()
             item['customer_date'] = review.xpath('.//div[@class="Comment--meta--1MFXGJ1"]/text()')[0].extract() or 'N/A'

@@ -4,16 +4,13 @@
 # Date: 
 """
 
-import re
+brand_page_data = [
+    ('得伟官方旗舰店官网', 2),
+    # ('史丹利 工具', 8),  # *****************************************************************************
+    # ('Facom', 9),# *****************************************************************************
+    # ('Irwin', 15),# *****************************************************************************
+]
 
-def extract_number(string):
-    number = re.findall(r'\d+', string)
-    if number:
-        return int(number[0])
-    else:
-        return 0
-
-s = '有用（-1）'
-d = extract_number(s)
-print(d)
-print(type(d))
+for brand, page in brand_page_data:
+    for page_num in range(0, page):
+        print(page_num)
