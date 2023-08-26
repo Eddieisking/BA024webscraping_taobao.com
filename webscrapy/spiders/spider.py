@@ -32,9 +32,9 @@ class SpiderSpider(scrapy.Spider):
 
         brand_page_data = [
             ('得伟官方旗舰店官网', 2),
-            ('史丹利 工具', 8),  # *****************************************************************************
-            ('Facom', 9),# *****************************************************************************
-            ('Irwin', 15),# *****************************************************************************
+            ('史丹利 工具', 8), 
+            ('Facom', 9),
+            ('Irwin', 15),
         ]
 
         for brand, page in brand_page_data:
@@ -48,6 +48,7 @@ class SpiderSpider(scrapy.Spider):
         add_cookies(self.browser, 'taobao.json')
         self.browser.get(url)
         time.sleep(5)
+        
         # Get the page source and create an HtmlResponse
         body = self.browser.page_source
         response = HtmlResponse(url=url, body=body, encoding='utf-8')
@@ -55,14 +56,12 @@ class SpiderSpider(scrapy.Spider):
         # Create a new Request object based on the HtmlResponse
         request = Request(url=url, meta={'response': response}, callback=self.parse)
         request.meta['dont_filter'] = True  # Set the dont_filter attribute
-
         return request
 
     def parse(self, response, **kwargs):
         html_response = response.meta['response']
         selector = Selector(response=html_response)
         product_list = selector.xpath('//div[@class="m-itemlist"]//div[@class="items"]/div')
-
         review_list = []
         for product in product_list:
             try:
@@ -72,26 +71,20 @@ class SpiderSpider(scrapy.Spider):
                     yield from self.selenium_request_new(url=product_url)
             except:
                 pass
-        # start_url = 'https://taobao.com'
-        # yield from self.selenium_request_new(review_list=review_list)  # Use yield from to delegate the generator
 
     def selenium_request_new(self, url):
         # Initialize variables to store the attributes
         product_brand = 'N/A'
         product_model = 'N/A'
         product_type = 'N/A'
-
         replace_url = "https://taobao.com"
+        
         """Click the customer review button"""
         review_url = url
-        # self.browser = create_chrome_driver(headless=False)
-        # self.browser.get('https://taobao.com')
-        # add_cookies(self.browser, 'taobao.json')
         self.browser.get(review_url)
         time.sleep(1)
         page_source = self.browser.page_source
         product_detail = re.findall(r'title="(.*?)"', page_source)
-
         for product_text in product_detail:
             if '品牌' in product_text:
                 product_brand = re.search(r'品牌：\s*(.*)', product_text).group(1)
@@ -114,7 +107,6 @@ class SpiderSpider(scrapy.Spider):
         # Create a new Request object based on the HtmlResponse
         request = Request(url=replace_url, meta={'response': response, 'product_brand':product_brand, 'product_model':product_model, 'product_type':product_type}, callback=self.customer_review_parse,
                           dont_filter=True)
-
         yield request
 
         """Click the next page of customer review button"""
@@ -138,7 +130,6 @@ class SpiderSpider(scrapy.Spider):
             # Create a new Request object based on the HtmlResponse
             request = Request(url=replace_url, meta={'response': response, 'product_brand':product_brand, 'product_model':product_model, 'product_type':product_type}, callback=self.customer_review_parse,
                               dont_filter=True)
-
             yield request
 
             # Re-locate the next button element after the page refreshes
@@ -146,12 +137,7 @@ class SpiderSpider(scrapy.Spider):
                 next_button_new = self.browser.find_element(By.XPATH, '//button[@class="detail-btn Comments--nextBtn--1itIAip"]')
             except:
                 print('No next_button_new')
-                # self.browser.quit()
                 break
-                # WebDriverWait(self.browser, 10).until(
-                # EC.presence_of_element_located(
-                #     (By.XPATH, '//button[@class="detail-btn Comments--nextBtn--1itIAip"]')))
-
             time.sleep(2)
             print('Continue to the next page')
 
